@@ -12,7 +12,7 @@ class GeneticElement(ABC):
         pass
 
     @abstractmethod
-    def __mul__(self, other : float) -> "GeneticElement":
+    def __mul__(self, other) -> "GeneticElement":
         pass
 
 class GeneticSolver(ABC):
@@ -29,39 +29,39 @@ class GeneticSolver(ABC):
     #------- Abstract methods to implement
     """
     @abstractmethod
-    def __init_elem(self) -> GeneticElement:
+    def _init_elem(self) -> GeneticElement:
         pass
 
     @abstractmethod
-    def __objective(self, elem : GeneticElement) -> float:
+    def _objective(self, elem : GeneticElement) -> float:
         pass
 
     @abstractmethod
-    def __breeding(self, elm1 : GeneticElement, elm2 : GeneticElement) -> GeneticElement:
+    def _breeding(self, elm1 : GeneticElement, elm2 : GeneticElement) -> GeneticElement:
         pass
 
     @abstractmethod
-    def __mutation(self, elem : GeneticElement) -> GeneticElement:
+    def _mutation(self, elem : GeneticElement) -> GeneticElement:
         pass
     
     @abstractmethod
-    def __selection(self, population : list[GeneticElement], fitness : list[float], elite_rate : float) -> list[GeneticElement]:
+    def _selection(self, population : list[GeneticElement], fitness : list[float], elite_rate : float) -> list[GeneticElement]:
         pass
 
     @abstractmethod
-    def __debug(self) -> str:
+    def _debug(self) -> str:
         pass
 
     """
     #------- Main methods
     """
     def initialize_population(self, population_size) -> list[GeneticElement]:
-        return [self.__init_elem() for _ in range(population_size)]
+        return [self._init_elem() for _ in range(population_size)]
 
     
     def evaluation(self, population : list[GeneticElement]) -> list[GeneticElement]:
         with multiprocessing.Pool() as pool:
-            ret = pool.map(self.__objective, population)
+            ret = pool.map(self._objective, population)
         return ret
     
     def solve(self) -> tuple[GeneticElement, float]:
@@ -70,21 +70,21 @@ class GeneticSolver(ABC):
         while (self.__last_fitness == None or self.__tol == None or min(self.__last_fitness) > self.__tol) and i < self.__number_of_generations:
             self.__last_fitness = self.evaluation(population)
 
-            elites = self.__selection(population, self.__last_fitness[::], self.__elite_rate)
+            elites = self._selection(population, self.__last_fitness[::], self.__elite_rate)
             elites_indices = np.arange(len(elites))
 
             new_population : list = elites[::] + self.initialize_population(round(self.__population_size * self.__exploration_rate))
 
             for _ in range(int(self.__population_size * self.__mutation_rate)):
                 element, = np.random.choice(elites_indices, 1, replace=False)
-                new_population.append(self.__mutation(elites[element]))
+                new_population.append(self._mutation(elites[element]))
 
             while len(new_population) < self.__population_size:
                 parent1, parent2 = np.random.choice(elites_indices, 2, replace=False)
-                child = self.__breeding(elites[parent1], elites[parent2])
+                child = self._breeding(elites[parent1], elites[parent2])
                 new_population.append(child)
             population = new_population
-            print(f"Generation {i + 1} : " + self.__debug())
+            print(f"Generation {i + 1} : " + self._debug())
             i += 1
         self.__last_fitness = self.evaluation(population)
         index = self.__last_fitness.index(min(self.__last_fitness))
@@ -114,6 +114,3 @@ class GeneticSolver(ABC):
 #     nb_elites = int(len(population) * elite_rate)
 #     indexes_sorted = np.argsort(fitness)
 #     return [population[i] for i in indexes_sorted[:nb_elites]]
-
-best_element, best_fitness = genetic(5000,50)
-print(best_element, best_fitness, best_fitness < TOL)
