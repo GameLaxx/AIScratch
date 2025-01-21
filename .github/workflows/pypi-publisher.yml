@@ -1,0 +1,36 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*' # actions with tag that starts with v
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # clone repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # config python
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'  # Choisissez la version de Python
+
+      # install dependencies for build
+      - name: Install build tools
+        run: pip install build twine
+
+      # build package
+      - name: Build package
+        run: python -m setup.py sdist bdist_wheel
+
+      # publish to pypi
+      - name: Publish to PyPI
+        run: twine upload dist/*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
