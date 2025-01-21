@@ -20,17 +20,22 @@ jobs:
         with:
           python-version: '3.9'  # Choisissez la version de Python
 
-      # install dependencies for build
-      - name: Install build tools
-        run: pip install build twine
+      # install poetry
+      - name: Install Poetry
+        run: pip install poetry
+
+      # verify poetry
+      - name: Poetry version
+        run: poetry --version
+
+      # install poetry dependencies
+      - name: Install dependencies
+        run: poetry install
 
       # build package
       - name: Build package
-        run: python -m setup.py sdist bdist_wheel
+        run: poetry build
 
       # publish to pypi
       - name: Publish to PyPI
-        run: twine upload dist/*
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: poetry publish --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.PYPI_PASSWORD }}

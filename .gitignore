@@ -1,0 +1,4 @@
+build/
+dist/
+AIScratch.egg-info/
+scripts
