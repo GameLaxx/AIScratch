@@ -39,7 +39,7 @@ for key in set_of_points.keys():
 n_in = 2
 n_out = 1
 eta = 0.001
-af = Treshold()
+af = Treshold(1,-1)
 weights = [af.weight_initialize(n_in, n_out) for _ in range(n_in)]
 ef = MSE()
 perceptron = Perceptron(eta, weights)
@@ -50,7 +50,7 @@ for i in range(epoch_number):
         # compute forward 
         inputs = np.array(key)
         score = perceptron.forward(inputs)
-        y_est = af.forward(score)
+        y_est =  af.forward(score)
         # compute backward
         error = ef.backward(set_of_points[key], y_est)
         gradient = af.backward(score)
@@ -62,7 +62,8 @@ ret = 0
 for key in set_of_points.keys():
     inputs = np.array(key)
     score = perceptron.forward(inputs)
-    if af.forward(score) == set_of_points[key]:
+    y_est =  af.forward(score)
+    if y_est == set_of_points[key]:
         ret += 1
 
 # final guess
