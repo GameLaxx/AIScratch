@@ -10,10 +10,10 @@ class ReLU(ActivationFunction):
             return 0
         return value
     
-    def backward(self, y, value):
+    def backward(self, value):
         if value < 0:
             return 0
-        return self.forward(value) - y
+        return 1
 
     def weight_initialize(self, n_in):
         return np.random.normal(0, 2 / n_in)

@@ -1,4 +1,4 @@
-from AIScratch.NeuralNetwork import Perceptron, Treshold
+from AIScratch.NeuralNetwork import Perceptron, Treshold, MSE
 from random import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,21 +36,33 @@ for key in set_of_points.keys():
     y2.append(key[1])
 
 # perceptron definition
+n_in = 2
+n_out = 1
+eta = 0.001
 af = Treshold()
-perceptron = Perceptron(2, 1, 0.001, af)
+weights = [af.weight_initialize(n_in, n_out) for _ in range(n_in)]
+ef = MSE()
+perceptron = Perceptron(eta, weights)
 
 # training 
 for i in range(epoch_number):
     for key in set_of_points.keys():
+        # compute forward 
         inputs = np.array(key)
-        y_est = perceptron.forward(inputs)
-        gradient = af.backward(set_of_points[key], y_est)
-        perceptron.learn(gradient)
+        score = perceptron.forward(inputs)
+        y_est = af.forward(score)
+        # compute backward
+        error = ef.backward(set_of_points[key], y_est)
+        gradient = af.backward(score)
+        # learn
+        perceptron.learn(error, gradient)
 
 # success rate
 ret = 0
 for key in set_of_points.keys():
-    if perceptron.forward(key) == set_of_points[key]:
+    inputs = np.array(key)
+    score = perceptron.forward(inputs)
+    if af.forward(score) == set_of_points[key]:
         ret += 1
 
 # final guess

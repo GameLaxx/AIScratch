@@ -9,7 +9,7 @@ class ActivationFunction(ABC):
         pass
 
     @abstractmethod
-    def backward(self, y, value) -> float:
+    def backward(self, value) -> float:
         pass
 
     @abstractmethod
