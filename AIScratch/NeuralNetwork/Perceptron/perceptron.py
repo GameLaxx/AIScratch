@@ -10,18 +10,12 @@ class Perceptron():
         weights = [activation_function.weight_initialize(n_in, n_out) for i in range(n_in)]
         self.weights = np.array(weights)
         self.bias = 0
-
-    def score(self, xs):
-        _input = np.array(xs)
-        return np.dot(_input, self.weights) + self.bias
     
-    def estimate(self, xs):
-        return self.activation_function.forward(self.score(xs))
+    def forward(self, inputs):
+        self.last_inputs = inputs.copy() # store for learning  
+        return self.activation_function.forward(np.dot(inputs, self.weights) + self.bias)
     
-    def learn(self, y, xs):
-        score = self.score(xs)
-        gradient = self.activation_function.backward(y, score)
-        _input = np.array(xs)
-        self.weights += self.eta * gradient * _input
+    def learn(self, gradient):
+        self.weights += self.eta * gradient * self.last_inputs
         self.bias += self.eta * gradient
 

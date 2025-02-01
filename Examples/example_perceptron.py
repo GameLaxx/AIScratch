@@ -1,5 +1,6 @@
 from AIScratch.NeuralNetwork import Perceptron, Treshold
 from random import random
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")
@@ -9,15 +10,10 @@ Example of usage of a perceptron of the library.
 In this case, we are trying to find separate a set of points into
 two groups. Points are labeled and the perceptron should figure out
 the way to separate them.
-NO_CONSTRAINT tries to find the run that is the closest to the distance.
-QUICK tries to find the run that arrives at the distance the fastest.
-EASY tries to find the run that asks for the less efforts.
-BOTH tries to find the run that is the fastest while asking for the less efforts.
-Each element is a list of time in h and each speed is in km/h.
 """
 # parameters
-num_of_points = 1000
-epoch_number = 200
+num_of_points = 100
+epoch_number = 100
 a = -0.4 # slope angle
 b = 0.7 # slope offset
 
@@ -46,12 +42,15 @@ perceptron = Perceptron(2, 1, 0.001, af)
 # training 
 for i in range(epoch_number):
     for key in set_of_points.keys():
-        perceptron.learn(set_of_points[key], key)
+        inputs = np.array(key)
+        y_est = perceptron.forward(inputs)
+        gradient = af.backward(set_of_points[key], y_est)
+        perceptron.learn(gradient)
 
 # success rate
 ret = 0
 for key in set_of_points.keys():
-    if perceptron.estimate(key) == set_of_points[key]:
+    if perceptron.forward(key) == set_of_points[key]:
         ret += 1
 
 # final guess
