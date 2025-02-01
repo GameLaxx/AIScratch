@@ -1,5 +1,4 @@
 import multiprocessing
-from random import random
 import numpy as np
 from abc import ABC, abstractmethod
 
@@ -16,13 +15,14 @@ class GeneticElement(ABC):
         pass
 
 class GeneticSolver(ABC):
-    def __init__(self, population_size, number_of_generations, tol = 0.01, elite_rate = 0.2, exploration_rate = 0.2, mutation_rate = 0.2):
+    def __init__(self, population_size, number_of_generations, tol = 0.01, elite_rate = 0.2, exploration_rate = 0.2, mutation_rate = 0.2, core_number = 0):
         self.__population_size = population_size
         self.__number_of_generations = number_of_generations
         self.__tol = tol
         self.__elite_rate = elite_rate
         self.__exploration_rate = exploration_rate
         self.__mutation_rate = mutation_rate
+        self.__core_number = core_number
         self.__last_fitness = None
 
     """
@@ -60,7 +60,9 @@ class GeneticSolver(ABC):
 
     
     def evaluation(self, population : list[GeneticElement]) -> list[GeneticElement]:
-        with multiprocessing.Pool() as pool:
+        if self.__core_number == 0:
+            return list(map(self._objective, population))
+        with multiprocessing.Pool(processes=self.__core_number) as pool:
             ret = pool.map(self._objective, population)
         return ret
     
@@ -89,28 +91,3 @@ class GeneticSolver(ABC):
         self.__last_fitness = self.evaluation(population)
         index = self.__last_fitness.index(min(self.__last_fitness))
         return population[index], min(self.__last_fitness)
-
-# def init_elem():
-#     ret = [0,0.5]
-#     for _ in range(3):
-#         ret.append(random() * 2)
-#     ret.append(4)
-#     ret.append(5)
-#     return np.array(ret)
-
-
-# def __mutation(self, elem):
-#     ret = elem.copy()
-#     for i in range(2,5):
-#         mutation_size = random() * 0.4 - 0.2
-#         ret[i] += mutation_size
-#     return ret
-
-# def __breeding(self, elm1, elm2):
-#     alpha = random()
-#     return elm1 * alpha + elm2 * (1 - alpha)
-
-# def __selection(self, population : list[GeneticElement], fitness : list[float], elite_rate : float) -> list[GeneticElement]:
-#     nb_elites = int(len(population) * elite_rate)
-#     indexes_sorted = np.argsort(fitness)
-#     return [population[i] for i in indexes_sorted[:nb_elites]]
