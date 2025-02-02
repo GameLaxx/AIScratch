@@ -1,0 +1,140 @@
+from AIScratch.NeuralNetwork import MLP, DenseLayer, Sigmoïde, ReLU, MSE
+from random import random
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+"""
+Example of usage of a perceptron of the library.
+In this case, we are trying to find separate a set of points into
+two groups. Points are labeled and the perceptron should figure out
+the way to separate them.
+"""
+# points labeling
+def labeling(xmin, xmax, ymin, ymax, number, func, error = 1):
+    ret = {}
+    for i in range(number):
+        coo = ((xmax - xmin) * random() + xmin, (ymax - ymin) * random() + ymin)
+        if error != 1 and random() > error:
+            ret[coo] = -1 if coo[1] > func(coo[0]) else 1
+            continue
+        ret[coo] = 1 if coo[1] > f(coo[0]) else -1
+    return ret
+
+# training 
+def training(network : MLP, training_set : dict[tuple[float, float], float], epoch_number : int):
+    for i in range(epoch_number):
+        for key in training_set.keys():
+            inputs = np.array(key)
+            network.backward(inputs, training_set[key])
+
+# compute groups
+def groups(set : dict[tuple[float, float], float], network : MLP = None):
+    x1 = []
+    y1 = []
+    x2 = []
+    y2 = []
+    for key in set.keys():
+        if (network == None and set[key] == 1) or (network != None and round(network.forward(np.array(key))[0])) == 1: # allow to get point either from label or from predictions
+            x1.append(key[0])
+            y1.append(key[1])
+            continue
+        x2.append(key[0])
+        y2.append(key[1])
+    return x1, y1, x2, y2
+
+# compute network performance
+def performance(set : dict[tuple[float, float], float], network : MLP):
+    ret = 0
+    for key in set.keys():
+        inputs = np.array(key)
+        ret += 1 if round(network.forward(inputs)[0]) == set[key] else 0
+    return ret / len(set.keys())
+
+# plot results
+def plot_results(xs_list,ys_list,labels,colors, plots, xlim = None, ylim = None, save_path = ""):
+    for i in range(len(xs_list)):
+        x = xs_list[i]
+        y = ys_list[i]
+        plot = plots[i]
+        color = colors[i]
+        label = labels[i]
+        if plot:
+            plt.plot(x, y, color, label=label)
+        else:
+            plt.scatter(x,y,c=color,label=label)  
+    # regular parameters
+    plt.grid()
+    plt.legend()  
+    if xlim != None:
+        plt.xlim(xlim)
+    if ylim != None:
+        plt.ylim(ylim)
+    if save_path != "":
+        plt.savefig(save_path)
+    else:
+        plt.show()
+
+# parameters
+num_of_points = 1000
+epoch_number = 250
+# function def
+f = lambda x : 0.25 * np.cos(x * 10) + 0.5 
+x_sep = [x / 100 for x in range(0,101)]
+y_sep = [f(x) for x in x_sep]
+
+x_sep_test = [x / 100 for x in range(300,401)]
+y_sep_test = [f(x) for x in x_sep_test]
+# sets definitions
+training_set = labeling(0,1,0,1, num_of_points, f)
+test_set = labeling(3,4,-0.5,1.5, num_of_points, f)
+# network definition
+n_in = 2
+sig = Sigmoïde(1,-1)
+relu = ReLU()
+ef = MSE()
+load = True
+if load:
+    layers = []
+    name_to_layer = {"Dense": DenseLayer}
+    name_to_function = {"sigmoïde": sig, "relu" : relu}
+    mlp = MLP(n_in, layers, ef)
+    mlp.load("mlp_data_90+.txt", name_to_layer, name_to_function)
+else:
+    layers = [DenseLayer(32, 0.001, relu), DenseLayer(16, 0.001, relu), DenseLayer(1, 0.001, sig)]
+    mlp = MLP(n_in, layers, ef)
+    training(mlp, training_set, epoch_number)
+
+mlp.extract("mlp_data.txt")
+
+# success rate
+print("Success rate on training : ", performance(training_set, mlp) * 100, "%")
+print("Success rate on test : ", performance(test_set, mlp) * 100, "%")
+x1,y1,x2,y2 = groups(training_set)
+plot_results(
+    [x1, x2, x_sep],
+    [y1, y2, y_sep],
+    ["Training group 1", "Training group 2", "Separation line"], 
+    ["b", "r", "k"], 
+    [False, False, True],
+    (0,1), 
+    (0,1), "MLP_training_set.png")
+x1_pred,y1_pred,x2_pred,y2_pred = groups(training_set, mlp)
+plot_results(
+    [x1_pred, x2_pred, x_sep],
+    [y1_pred, y2_pred, y_sep],
+    ["Prediction group 1", "Prediction group 2", "Separation line"], 
+    ["b", "r", "k"], 
+    [False, False, True],
+    (0,1), 
+    (0,1), "MLP_training_pred.png")
+x1_test,y1_test,x2_test,y2_test = groups(test_set, mlp)
+plot_results(
+    [x1_test, x2_test, x_sep_test],
+    [y1_test, y2_test, y_sep_test],
+    ["Test group 1", "Test group 2", "Separation line"], 
+    ["b", "r", "k"], 
+    [False, False, True],
+    (3,4), 
+    (-0.5,1.5), "MLP_training_test.png")

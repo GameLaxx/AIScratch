@@ -3,12 +3,14 @@ import random
 import numpy as np
 
 class Sigmoïde(ActivationFunction):
-    def __init__(self, up, down):
-        super().__init__()
+    def __init__(self, up = 1, down = 0):
+        super().__init__("sigmoïde")
         self.up = up
         self.down = down
 
     def __core(self, value):
+        if value > 500: return self.up
+        if value < -500: return self.down
         return 1 / (1 + np.exp(-value))
     
     def forward(self, value):

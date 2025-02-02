@@ -1,8 +1,8 @@
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 import random
 class Treshold(ActivationFunction):
-    def __init__(self, up, down):
-        super().__init__()
+    def __init__(self, up = 1, down = 0):
+        super().__init__("treshold")
         self.up = up
         self.down = down
 
