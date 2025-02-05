@@ -6,7 +6,11 @@ class CrossEntropy(ErrorFunction):
         super().__init__()
 
     def forward(self, y, y_est):
+        y = np.asarray(y)
+        y_est = np.clip(y_est, 1e-12, 1.0)  # avoid log 1
         return - y * np.log(y_est)
     
     def backward(self, y, y_est):
+        y = np.asarray(y)
+        y_est = np.clip(y_est, 1e-12, 1.0)  # avoid div by 0
         return - y / y_est

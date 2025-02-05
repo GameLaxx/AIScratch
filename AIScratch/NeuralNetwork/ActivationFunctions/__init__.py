@@ -2,3 +2,4 @@ from AIScratch.NeuralNetwork.ActivationFunctions.function import ActivationFunct
 from AIScratch.NeuralNetwork.ActivationFunctions.relu import ReLU
 from AIScratch.NeuralNetwork.ActivationFunctions.treshold import Treshold
 from AIScratch.NeuralNetwork.ActivationFunctions.sigmoide import Sigmoïde
+from AIScratch.NeuralNetwork.ActivationFunctions.softmax import Softmax

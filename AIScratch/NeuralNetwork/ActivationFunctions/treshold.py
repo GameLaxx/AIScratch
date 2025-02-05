@@ -1,5 +1,5 @@
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
-import random
+import numpy as np
 class Treshold(ActivationFunction):
     def __init__(self, up = 1, down = 0):
         super().__init__("treshold")
@@ -7,12 +7,10 @@ class Treshold(ActivationFunction):
         self.down = down
 
     def forward(self, value):
-        if value < 0:
-            return self.down
-        return self.up
+        return np.where(value < 0, self.down, self.up)
     
     def backward(self, value):
-        return 1 # not real derivative but works fine
+        return np.ones_like(value) # not real derivative but works fine
 
     def weight_initialize(self, n_in = 1, n_out = 1):
-        return random.random() * 2 - 1
+        return self._weight_uniform(n_in, n_out)

@@ -1,5 +1,4 @@
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
-import random
 import numpy as np
 
 class Sigmoïde(ActivationFunction):
@@ -9,9 +8,7 @@ class Sigmoïde(ActivationFunction):
         self.down = down
 
     def __core(self, value):
-        if value > 500: return self.up
-        if value < -500: return self.down
-        return 1 / (1 + np.exp(-value))
+        return np.where(value > 500, self.up, np.where(value < -500, self.down, 1 / (1 + np.exp(-value))))
     
     def forward(self, value):
         return (self.up - self.down) * self.__core(value) + self.down
@@ -20,5 +17,4 @@ class Sigmoïde(ActivationFunction):
         return (self.up - self.down) * self.__core(value) * (1 - self.__core(value))
 
     def weight_initialize(self, n_in = 1, n_out = 1):
-        bound = 6 ** 0.5 / (n_in + n_out) ** 0.5
-        return random.random() * 2 * bound - bound
+        return self._weight_xavier(n_in, n_out)

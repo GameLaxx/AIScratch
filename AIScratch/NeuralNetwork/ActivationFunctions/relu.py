@@ -8,14 +8,12 @@ class ReLU(ActivationFunction):
         self.slope = slope
 
     def forward(self, value):
-        if value < self.treshold:
-            return 0
-        return self.slope * value
-    
+        value = np.asarray(value)  # Convertit en np.array si ce n'est pas déjà le cas
+        return np.where(value <= self.treshold, 0, self.slope * value)
+
     def backward(self, value):
-        if value < self.treshold:
-            return 0
-        return self.slope
+        value = np.asarray(value)
+        return np.where(value <= self.treshold, 0, self.slope)
 
     def weight_initialize(self, n_in = 1, n_out = 1):
-        return np.random.normal(0, 2 / n_in)
+        return self._weight_he(n_in, n_out)

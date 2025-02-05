@@ -18,7 +18,7 @@ class DenseLayer(Layer):
 
     def forward(self, inputs):
         self.last_sums = np.array([neuron.forward(inputs) for neuron in self.neurons])
-        self.last_activations = np.array([self.activation_function.forward(output) for output in self.last_sums])
+        self.last_activations = self.activation_function.forward(self.last_sums)
         return self.last_activations
     
     def learn(self, errors, gradients):
