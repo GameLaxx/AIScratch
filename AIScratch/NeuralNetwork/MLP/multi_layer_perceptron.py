@@ -18,15 +18,16 @@ class MLP():
             prev_size = layer.n_out
 
     def forward(self, inputs):
-        outputs = np.array(inputs)
+        outputs = np.asarray(inputs)
         for layer in self.layers:
             outputs = layer.forward(outputs)
         return outputs
     
     def backward(self, inputs, expected_outputs):
-        _inputs = np.array(inputs)
-        outputs = self.forward(_inputs) # all neurons stores the inputs and all layers store activations
-        errors = self.error_function.backward(expected_outputs, outputs)
+        expected_outputs = np.asarray(expected_outputs)
+        inputs = np.asarray(inputs)
+        outputs = self.forward(inputs) # all neurons stores the inputs and all layers store activations
+        errors = self.error_function.backward(expected_outputs, outputs) / len(outputs) # mean error
         for p in reversed(range(len(self.layers))): # each layer should compute gradient for itself and error for next
             # current layer computation
             layer = self.layers[p] # layer p
@@ -48,6 +49,7 @@ class MLP():
             file_path : str, 
             name_to_layer : dict[str,Layer], 
             name_to_function : dict[str, ActivationFunction]):
+        self.layers = []
         with open(file_path, "r") as f:
             lines = f.readlines()
         layer_data = None
