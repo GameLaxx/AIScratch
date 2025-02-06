@@ -1,4 +1,4 @@
-from AIScratch.NeuralNetwork import MLP, DenseLayer, Sigmoïde, ReLU, MSE
+from AIScratch.NeuralNetwork import MLP, DenseLayer, Sigmoïde, ReLU, MSE, MinMaxEncoder, Encoder
 from random import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,19 +24,21 @@ def labeling(xmin, xmax, ymin, ymax, number, func, error = 1):
 
 # training 
 def training(network : MLP, training_set : dict[tuple[float, float], float], epoch_number : int):
-    for i in range(epoch_number):
+    for epoch in range(epoch_number):
+        print("Training :", epoch)
         for key in training_set.keys():
             inputs = np.array(key)
             network.backward(inputs, training_set[key])
 
 # compute groups
-def groups(set : dict[tuple[float, float], float], network : MLP = None):
+def groups(set : dict[tuple[float, float], float], network : MLP = None, encoder : Encoder = None):
     x1 = []
     y1 = []
     x2 = []
     y2 = []
     for key in set.keys():
-        if (network == None and set[key] == 1) or (network != None and round(network.forward(np.array(key))[0])) == 1: # allow to get point either from label or from predictions
+        _input = np.array(key) if encoder is None else encoder.encode(key)
+        if (network == None and set[key] == 1) or (network != None and round(network.forward(_input)[0])) == 1: # allow to get point either from label or from predictions
             x1.append(key[0])
             y1.append(key[1])
             continue
@@ -45,10 +47,10 @@ def groups(set : dict[tuple[float, float], float], network : MLP = None):
     return x1, y1, x2, y2
 
 # compute network performance
-def performance(set : dict[tuple[float, float], float], network : MLP):
+def performance(set : dict[tuple[float, float], float], network : MLP, encoder : Encoder = None):
     ret = 0
     for key in set.keys():
-        inputs = np.array(key)
+        inputs = np.array(key) if encoder is None else encoder.encode(key)
         ret += 1 if round(network.forward(inputs)[0]) == set[key] else 0
     return ret / len(set.keys())
 
@@ -78,7 +80,7 @@ def plot_results(xs_list,ys_list,labels,colors, plots, xlim = None, ylim = None,
 
 # parameters
 num_of_points = 1000
-epoch_number = 250
+epoch_number = 200
 # function def
 f = lambda x : 0.25 * np.cos(x * 10) + 0.5 
 x_sep = [x / 100 for x in range(0,101)]
@@ -94,23 +96,24 @@ n_in = 2
 sig = Sigmoïde(1,-1)
 relu = ReLU()
 ef = MSE()
+test_encoder = MinMaxEncoder(np.array([4,1.5]),np.array([3,-0.5]))
 load = True
 if load:
     layers = []
     name_to_layer = {"Dense": DenseLayer}
     name_to_function = {"sigmoïde": sig, "relu" : relu}
     mlp = MLP(n_in, layers, ef)
-    mlp.load("mlp_data_90+.txt", name_to_layer, name_to_function)
+    mlp.load("Examples/mlp_cos_network.txt", name_to_layer, name_to_function)
 else:
     layers = [DenseLayer(32, 0.001, relu), DenseLayer(16, 0.001, relu), DenseLayer(1, 0.001, sig)]
     mlp = MLP(n_in, layers, ef)
     training(mlp, training_set, epoch_number)
 
-mlp.extract("mlp_data.txt")
+# mlp.extract("mlp_data.txt")
 
-# success rate
+# # success rate
 print("Success rate on training : ", performance(training_set, mlp) * 100, "%")
-print("Success rate on test : ", performance(test_set, mlp) * 100, "%")
+print("Success rate on test : ", performance(test_set, mlp, test_encoder) * 100, "%")
 x1,y1,x2,y2 = groups(training_set)
 plot_results(
     [x1, x2, x_sep],
@@ -129,7 +132,7 @@ plot_results(
     [False, False, True],
     (0,1), 
     (0,1), "MLP_training_pred.png")
-x1_test,y1_test,x2_test,y2_test = groups(test_set, mlp)
+x1_test,y1_test,x2_test,y2_test = groups(test_set, mlp, test_encoder)
 plot_results(
     [x1_test, x2_test, x_sep_test],
     [y1_test, y2_test, y_sep_test],

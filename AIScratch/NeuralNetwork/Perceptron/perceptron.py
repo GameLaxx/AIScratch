@@ -6,11 +6,10 @@ class Perceptron():
         self.weights = np.array(weights)
         self.bias = bias
     
-    def forward(self, inputs):
-        self.last_inputs = inputs.copy() # store for learning  
+    def forward(self, inputs):# store for learning  
         return np.dot(inputs, self.weights) + self.bias
     
-    def learn(self, error, gradient):
-        self.weights -= self.eta * error * gradient * self.last_inputs
+    def learn(self, error, gradient, inputs):
+        self.weights -= self.eta * error * gradient * inputs
         self.bias -= self.eta * error * gradient
 

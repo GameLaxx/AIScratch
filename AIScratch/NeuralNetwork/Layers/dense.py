@@ -17,10 +17,11 @@ class DenseLayer(Layer):
             self.neurons.append(Perceptron(self.eta, weights, bias))
 
     def forward(self, inputs):
-        self.last_sums = np.array([neuron.forward(inputs) for neuron in self.neurons])
+        self.last_inputs = inputs.copy() 
+        self.last_sums = np.array([neuron.forward(self.last_inputs) for neuron in self.neurons])
         self.last_activations = self.activation_function.forward(self.last_sums)
         return self.last_activations
     
     def learn(self, errors, gradients):
         for i in range(self.n_out):
-            self.neurons[i].learn(errors[i], gradients[i])
+            self.neurons[i].learn(errors[i], gradients[i], self.last_inputs)
