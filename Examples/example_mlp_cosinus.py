@@ -1,4 +1,4 @@
-from AIScratch.NeuralNetwork import MLP, DenseLayer, Sigmoïde, ReLU, MSE, MinMaxEncoder, Encoder
+from AIScratch.NeuralNetwork import MLP, DenseLayer, Sigmoïde, ReLU, MSE, MinMaxEncoder, Encoder, SGDOptimizer, ADAMOptimizer
 from random import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -80,7 +80,7 @@ def plot_results(xs_list,ys_list,labels,colors, plots, xlim = None, ylim = None,
 
 # parameters
 num_of_points = 1000
-epoch_number = 200
+epoch_number = 100
 # function def
 f = lambda x : 0.25 * np.cos(x * 10) + 0.5 
 x_sep = [x / 100 for x in range(0,101)]
@@ -97,16 +97,20 @@ sig = Sigmoïde(1,-1)
 relu = ReLU()
 ef = MSE()
 test_encoder = MinMaxEncoder(np.array([4,1.5]),np.array([3,-0.5]))
-load = True
+# ADAM Optimizer
+optimizer_factory = lambda n_p1, n_p : ADAMOptimizer(n_p1, n_p, 0.001, 1e-8, 0.9, 0.999)
+# SGD Optimizer
+optimizer_factory = lambda n_p1, n_p : SGDOptimizer(n_p1, n_p, 0.001)
+load = False
 if load:
     layers = []
     name_to_layer = {"Dense": DenseLayer}
     name_to_function = {"sigmoïde": sig, "relu" : relu}
-    mlp = MLP(n_in, layers, ef)
+    mlp = MLP(n_in, layers, ef, optimizer_factory)
     mlp.load("Examples/mlp_cos_network.txt", name_to_layer, name_to_function)
 else:
-    layers = [DenseLayer(32, 0.001, relu), DenseLayer(16, 0.001, relu), DenseLayer(1, 0.001, sig)]
-    mlp = MLP(n_in, layers, ef)
+    layers = [DenseLayer(32, relu), DenseLayer(16, relu), DenseLayer(1, sig)]
+    mlp = MLP(n_in, layers, ef, optimizer_factory)
     training(mlp, training_set, epoch_number)
 
 # mlp.extract("mlp_data.txt")

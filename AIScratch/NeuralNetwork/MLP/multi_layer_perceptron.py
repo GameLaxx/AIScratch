@@ -1,12 +1,15 @@
 import numpy as np
+from typing import Callable, Any
 from AIScratch.NeuralNetwork.Perceptron import Perceptron
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
+from AIScratch.NeuralNetwork.Optimizers import Optimizer
 from AIScratch.NeuralNetwork.ErrorFunctions import ErrorFunction
 from AIScratch.NeuralNetwork.Layers import Layer
 
 class MLP():
-    def __init__(self, input_number : int, layers : list[Layer], error_function : ErrorFunction):
+    def __init__(self, input_number : int, layers : list[Layer], error_function : ErrorFunction, optimizer_factory : Callable[[int, int], Optimizer]):
         self.input_number = input_number
+        self.optimizer_factory = optimizer_factory
         self.layers : list[Layer] = layers
         self.error_function = error_function
         self.__initialize()
@@ -14,7 +17,7 @@ class MLP():
     def __initialize(self):
         prev_size = self.input_number
         for layer in self.layers:
-            layer._initialize(prev_size)
+            layer._initialize(prev_size, self.optimizer_factory(prev_size, layer.n_out))
             prev_size = layer.n_out
 
     def forward(self, inputs):
@@ -27,6 +30,7 @@ class MLP():
         expected_outputs = np.asarray(expected_outputs)
         inputs = np.asarray(inputs)
         outputs = self.forward(inputs) # all neurons stores the inputs and all layers store activations
+        #! Problem with mean here
         errors = self.error_function.backward(expected_outputs, outputs) / len(outputs) # mean error
         for p in reversed(range(len(self.layers))): # each layer should compute gradient for itself and error for next
             # current layer computation
@@ -65,7 +69,7 @@ class MLP():
                             name_to_function[layer_data["activation_function"]]
                         )
                     )
-                    self.layers[-1]._initialize(prev_size, list_of_weights)
+                    self.layers[-1]._initialize(prev_size, self.optimizer_factory(prev_size, layer_data["n_out"]), list_of_weights)
                     prev_size = layer_data["n_out"]
                 if i == len(lines):
                     break
