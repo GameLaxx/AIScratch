@@ -1,4 +1,5 @@
 from AIScratch.NeuralNetwork.ErrorFunctions import ErrorFunction
+import numpy as np
 
 class HingeLoss(ErrorFunction):
     def __init__(self):
@@ -6,12 +7,10 @@ class HingeLoss(ErrorFunction):
 
     def forward(self, y, y_est):
         tmp = 1 - y * y_est
-        if tmp < 0:
-            return 0
-        return tmp
+        return np.where(tmp < 0, 0, tmp)
     
     def backward(self, y, y_est):
         tmp = 1 - y * y_est
         if tmp <= 0:
             return 0
-        return -y
+        return np.where(tmp < 0, 0, -y)

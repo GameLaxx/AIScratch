@@ -22,9 +22,9 @@ def labeling(xmin, xmax, ymin, ymax, number, func, error = 1):
     for i in range(number):
         coo = ((xmax - xmin) * random() + xmin, (ymax - ymin) * random() + ymin)
         if error != 1 and random() > error:
-            ret[coo] = 0 if coo[1] > func(coo[0]) else 1
+            ret[coo] = [1,0] if coo[1] > func(coo[0]) else [0,1]
             continue
-        ret[coo] = 1 if coo[1] > f(coo[0]) else 0
+        ret[coo] = [0,1] if coo[1] > f(coo[0]) else [1,0]
     return ret
 
 # training 
@@ -43,7 +43,7 @@ def groups(set : dict[tuple[float, float], float], network : MLP = None, encoder
     y2 = []
     for key in set.keys():
         _input = np.array(key) if encoder is None else encoder.encode(key)
-        if (network == None and set[key] == 1) or (network != None and round(network.forward(_input)[0])) == 1: # allow to get point either from label or from predictions
+        if (network == None and set[key] == [1,0]) or (network != None and network.forward(_input)[0]) > 0.9: # allow to get point either from label or from predictions
             x1.append(key[0])
             y1.append(key[1])
             continue
@@ -56,9 +56,9 @@ def performance(set : dict[tuple[float, float], float], network : MLP, encoder :
     ret = 0
     for key in set.keys():
         inputs = np.array(key) if encoder is None else encoder.encode(key)
-        if network.forward(inputs)[0] > 0.9 and set[key] == 1:
+        if network.forward(inputs)[0] < 0.1 and set[key] == [0,1]:
             ret += 1
-        if network.forward(inputs)[0] < 0.9 and set[key] == 0:
+        if network.forward(inputs)[0] > 0.9 and set[key] == [1,0]:
             ret += 1
     return ret / len(set.keys())
 
@@ -89,7 +89,7 @@ def plot_results(xs_list,ys_list,labels,colors, plots, xlim = None, ylim = None,
 
 # parameters
 num_of_points = 1000
-epoch_number = 10
+epoch_number = 50
 # function def
 f = lambda x : 0.25 * np.cos(x * 10) + 0.5 
 x_sep = [x / 100 for x in range(0,101)]
@@ -104,9 +104,10 @@ test_set = labeling(3,4,-0.5,1.5, num_of_points, f)
 n_in = 2
 #?-------------------#
 sig = Sigmoïde()
+soft = Softmax()
 relu = ReLU()
 #?-------------------#
-ef = MSE()
+ef = CrossEntropy()
 #?-------------------#
 test_encoder = MinMaxEncoder(np.array([4,1.5]),np.array([3,-0.5]))
 #?-------------------#
@@ -121,12 +122,12 @@ if load:
     name_to_layer = {"Dense": DenseLayer}
     name_to_function = {"sigmoïde": sig, "relu" : relu}
     mlp = MLP(n_in, layers, ef, optimizer_factory)
-    mlp.load("Examples/mlp_cos_network.txt", name_to_layer, name_to_function)
+    mlp.load("Examples/mlp_cos_soft_network.txt", name_to_layer, name_to_function)
 else:
-    layers = [DenseLayer(32, relu), DenseLayer(16, relu), DenseLayer(1, sig)]
-    mlp = MLP(n_in, layers, ef, optimizer_factory)
+    layers = [DenseLayer(32, relu), DenseLayer(16, relu), DenseLayer(2, soft)]
+    mlp = MLP(n_in, layers, ef, optimizer_factory, batch_size=1)
     training(mlp, training_set, epoch_number)
-
+    
 # mlp.extract("mlp_data.txt")
 
 # # success rate

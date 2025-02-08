@@ -22,6 +22,10 @@ class Layer(ABC):
         pass
 
     @abstractmethod
-    def learn(self, errors, gradients):
+    def store(self, grad_L_z):
+        pass
+
+    @abstractmethod
+    def learn(self):
         pass
 

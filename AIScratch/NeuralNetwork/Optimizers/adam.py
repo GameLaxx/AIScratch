@@ -24,11 +24,12 @@ class ADAMOptimizer(Optimizer):
     def update_vb(self, grad_L_zp):
         self.vb = self.beta2 * self.vb + (1 - self.beta2) * (grad_L_zp ** 2) 
 
-    def optimize(self, errors, gradients, inputs):
-        grad_L_z = errors * gradients # vector 
-        self.update_mb(grad_L_z)
-        self.update_vb(grad_L_z)
-        grad_L_w = np.outer(grad_L_z, inputs) # matrix
+    def store(self, grad_L_z, inputs):
+        return np.outer(grad_L_z, inputs)
+    
+    def optimize(self, grad_L_w, grad_L_b):
+        self.update_mb(grad_L_b)
+        self.update_vb(grad_L_b)
         self.update_mp(grad_L_w)
         self.update_vp(grad_L_w)
         mp_corr = self.mp / (1 - self.beta1t)

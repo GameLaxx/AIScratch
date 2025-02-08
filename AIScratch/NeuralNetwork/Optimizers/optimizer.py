@@ -5,5 +5,9 @@ class Optimizer(ABC):
         pass
 
     @abstractmethod
-    def optimize(self, errors, gradients, inputs):
+    def store(self, grad_L_z, inputs):
+        pass
+
+    @abstractmethod
+    def optimize(self, grad_L_w, grad_L_b):
         pass

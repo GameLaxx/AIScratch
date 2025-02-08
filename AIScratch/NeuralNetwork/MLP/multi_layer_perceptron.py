@@ -7,11 +7,13 @@ from AIScratch.NeuralNetwork.ErrorFunctions import ErrorFunction
 from AIScratch.NeuralNetwork.Layers import Layer
 
 class MLP():
-    def __init__(self, input_number : int, layers : list[Layer], error_function : ErrorFunction, optimizer_factory : Callable[[int, int], Optimizer]):
+    def __init__(self, input_number : int, layers : list[Layer], error_function : ErrorFunction, optimizer_factory : Callable[[int, int], Optimizer], batch_size = 1):
         self.input_number = input_number
         self.optimizer_factory = optimizer_factory
         self.layers : list[Layer] = layers
         self.error_function = error_function
+        self.batch_size = batch_size
+        self.batch_counter = 0
         self.__initialize()
 
     def __initialize(self):
@@ -30,16 +32,27 @@ class MLP():
         expected_outputs = np.asarray(expected_outputs)
         inputs = np.asarray(inputs)
         outputs = self.forward(inputs) # all neurons stores the inputs and all layers store activations
-        #! Problem with mean here
-        errors = self.error_function.backward(expected_outputs, outputs) / len(outputs) # mean error
+        if self.layers[-1].activation_function.name == "softmax":
+            errors = outputs - expected_outputs
+        else:
+            errors = self.error_function.backward(expected_outputs, outputs) # mean error
+        self.batch_counter += 1
         for p in reversed(range(len(self.layers))): # each layer should compute gradient for itself and error for next
             # current layer computation
             layer = self.layers[p] # layer p
-            gradients = np.array([layer.activation_function.backward(z) for z in layer.last_sums]) # f'p(Sp,j)
-            layer.learn(errors, gradients) # a(p - 1) already in each neuron
+            if layer.activation_function.name == "softmax":
+                gradients = 1
+            else:
+                gradients = np.array([layer.activation_function.backward(z) for z in layer.last_sums]) # f'p(Sp,j)
+            grad_L_z = errors * gradients # dL/dz = dL/dy * f'p(Sp,j)
+            layer.store(grad_L_z) # store gradient
+            if self.batch_counter == self.batch_size:
+                layer.learn()
             # next layer computation
             previous_weights = np.array([neuron.weights for neuron in layer.neurons]) # create matrix of previus layer weights (for next layer its our current one)
-            errors = np.dot(errors, previous_weights) # compute next layer errors
+            errors = np.dot(grad_L_z, previous_weights) # compute next layer errors
+        if self.batch_counter == self.batch_size:
+            self.batch_counter = 0
 
     def extract(self, file_path : str):
         with open(file_path, "w") as f:

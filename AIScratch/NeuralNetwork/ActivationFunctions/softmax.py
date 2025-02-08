@@ -2,7 +2,7 @@ from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 import numpy as np
 
 class Softmax(ActivationFunction):
-    def __init__(self, treshold = 0, slope = 1):
+    def __init__(self):
         super().__init__("softmax")
 
     def forward(self, values):
