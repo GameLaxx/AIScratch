@@ -8,7 +8,7 @@ class Perceptron():
     def forward(self, inputs):# store for learning  
         return np.dot(inputs, self.weights) + self.bias
     
-    def learn(self, learning_rates, weighted_errors, biais_update):
+    def backward(self, learning_rates, weighted_errors, biais_update):
         self.weights -= learning_rates * weighted_errors
         self.bias -= biais_update
 

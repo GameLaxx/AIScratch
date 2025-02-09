@@ -2,7 +2,7 @@ from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 
 class Linear(ActivationFunction):
     def __init__(self, origin = 0, slope = 1):
-        super().__init__("relu")
+        super().__init__("linear")
         self.origin = origin
         self.slope = slope
 

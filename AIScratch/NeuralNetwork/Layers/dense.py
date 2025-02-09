@@ -4,7 +4,7 @@ from AIScratch.NeuralNetwork.Perceptron import Perceptron
 
 class DenseLayer(Layer):
     def __init__(self, n_out, activation_function):
-        super().__init__(n_out, activation_function, "Dense")
+        super().__init__(n_out, activation_function, "dense")
 
     def _initialize(self, n_in, optimizer, list_of_weights = None):
         self.optimizer = optimizer
@@ -32,10 +32,10 @@ class DenseLayer(Layer):
         self.grad_L_w += grad_L_w 
         self.grad_L_b += grad_L_z
     
-    def learn(self):
+    def backward(self):
         learning_rates, weighted_errors, biais_update = self.optimizer.optimize(self.grad_L_w / self.batch_size, self.grad_L_b / self.batch_size)
         self.grad_L_w.fill(0)
         self.grad_L_b.fill(0)
         self.batch_size = 0
         for i in range(self.n_out):
-            self.neurons[i].learn(learning_rates[i], weighted_errors[i], biais_update[i])
+            self.neurons[i].backward(learning_rates[i], weighted_errors[i], biais_update[i])

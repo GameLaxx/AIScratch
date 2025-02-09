@@ -5,6 +5,8 @@ from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 from AIScratch.NeuralNetwork.Optimizers import Optimizer
 from AIScratch.NeuralNetwork.ErrorFunctions import ErrorFunction
 from AIScratch.NeuralNetwork.Layers import Layer
+from AIScratch.NeuralNetwork.ActivationFunctions import activation_set
+from AIScratch.NeuralNetwork.Layers import layer_set
 
 class MLP():
     def __init__(self, input_number : int, layers : list[Layer], error_function : ErrorFunction, optimizer_factory : Callable[[int, int], Optimizer], batch_size = 1):
@@ -47,7 +49,7 @@ class MLP():
             grad_L_z = errors * gradients # dL/dz = dL/dy * f'p(Sp,j)
             layer.store(grad_L_z) # store gradient
             if self.batch_counter == self.batch_size:
-                layer.learn()
+                layer.backward()
             # next layer computation
             previous_weights = np.array([neuron.weights for neuron in layer.neurons]) # create matrix of previus layer weights (for next layer its our current one)
             errors = np.dot(grad_L_z, previous_weights) # compute next layer errors
@@ -57,15 +59,12 @@ class MLP():
     def extract(self, file_path : str):
         with open(file_path, "w") as f:
             for layer in self.layers:
-                f.write(f"*-*{layer.name}//{layer.n_out}//{layer.eta}//{layer.activation_function.name}\n")
+                f.write(f"*-*{layer.name}//{layer.n_out}//{layer.activation_function.name}\n")
                 for neuron in layer.neurons:
                     f.write("|".join(map(str, neuron.weights)))
                     f.write("|" + str(neuron.bias) + "\n")
 
-    def load(self, 
-            file_path : str, 
-            name_to_layer : dict[str,Layer], 
-            name_to_function : dict[str, ActivationFunction]):
+    def load(self, file_path : str):
         self.layers = []
         with open(file_path, "r") as f:
             lines = f.readlines()
@@ -76,10 +75,9 @@ class MLP():
             if i == len(lines) or lines[i].startswith("*-*"):
                 if layer_data != None:
                     self.layers.append(
-                        name_to_layer[layer_data["name"]](
+                        layer_set[layer_data["name"]](
                             layer_data["n_out"], 
-                            layer_data["eta"],
-                            name_to_function[layer_data["activation_function"]]
+                            activation_set[layer_data["activation_function"]]
                         )
                     )
                     self.layers[-1]._initialize(prev_size, self.optimizer_factory(prev_size, layer_data["n_out"]), list_of_weights)
@@ -92,8 +90,7 @@ class MLP():
                 layer_txt = layer_txt.split("//")
                 layer_data["name"] = layer_txt[0]
                 layer_data["n_out"] = int(layer_txt[1])
-                layer_data["eta"] = float(layer_txt[2])
-                layer_data["activation_function"] = layer_txt[3]
+                layer_data["activation_function"] = layer_txt[2]
                 continue
             if lines[i][0] == "N":
                 continue

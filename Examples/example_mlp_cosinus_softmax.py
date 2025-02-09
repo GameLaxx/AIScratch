@@ -119,16 +119,14 @@ optimizer_factory = lambda n_p1, n_p : ADAMOptimizer(n_p1, n_p, 0.001, 1e-8, 0.9
 load = False
 if load:
     layers = []
-    name_to_layer = {"Dense": DenseLayer}
-    name_to_function = {"sigmoïde": sig, "relu" : relu}
     mlp = MLP(n_in, layers, ef, optimizer_factory)
-    mlp.load("Examples/mlp_cos_soft_network.txt", name_to_layer, name_to_function)
+    mlp.load("Examples/mlp_cos_soft_network.txt")
 else:
     layers = [DenseLayer(32, relu), DenseLayer(16, relu), DenseLayer(2, soft)]
     mlp = MLP(n_in, layers, ef, optimizer_factory, batch_size=1)
     training(mlp, training_set, epoch_number)
     
-# mlp.extract("mlp_data.txt")
+mlp.extract("Examples/mlp_cos_soft_network.txt")
 
 # # success rate
 print("Success rate on training : ", performance(training_set, mlp) * 100, "%")
