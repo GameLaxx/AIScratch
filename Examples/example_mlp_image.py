@@ -1,4 +1,8 @@
-from AIScratch.NeuralNetwork import MLP, DenseLayer, Softmax, Linear, ReLU, CrossEntropy, ADAMOptimizer, SGDOptimizer
+from AIScratch.NeuralNetwork import MLP
+from AIScratch.NeuralNetwork import DenseLayer, DropoutLayer
+from AIScratch.NeuralNetwork import MSE, CrossEntropy
+from AIScratch.NeuralNetwork import Softmax, ReLU
+from AIScratch.NeuralNetwork import ADAMOptimizer
 from random import random
 import numpy as np
 from tensorflow.keras.datasets import mnist
@@ -29,9 +33,8 @@ def performance(network : MLP, test_xs, test_ys, confidence_treshold = 0.95):
     return ret / len(test_xs)
 
 n_in = 784
-epoch_number = 6
+epoch_number = 5
 soft = Softmax()
-lin = Linear()
 relu = ReLU()
 ef = CrossEntropy()
 # ADAM Optimizer
@@ -44,8 +47,8 @@ if load:
     mlp = MLP(n_in, layers, ef, optimizer_factory)
     mlp.load("Examples/mlp_image_network.txt")
 else:
-    layers = [DenseLayer(128, relu), DenseLayer(64, relu), DenseLayer(10, soft)]
-    mlp = MLP(n_in, layers, ef, optimizer_factory, 32)
+    layers = [DenseLayer(128, relu), DropoutLayer(64, relu, 0.7), DenseLayer(10, soft)]
+    mlp = MLP(n_in, layers, ef, optimizer_factory, 16)
     training(mlp, X_train, y_train, epoch_number)
 
 mlp.extract("Examples/mlp_image_network.txt")

@@ -24,16 +24,16 @@ class MLP():
             layer._initialize(prev_size, self.optimizer_factory(prev_size, layer.n_out))
             prev_size = layer.n_out
 
-    def forward(self, inputs):
+    def forward(self, inputs, is_training = False):
         outputs = np.asarray(inputs)
         for layer in self.layers:
-            outputs = layer.forward(outputs)
+            outputs = layer.forward(outputs, is_training)
         return outputs
     
     def backward(self, inputs, expected_outputs):
         expected_outputs = np.asarray(expected_outputs)
         inputs = np.asarray(inputs)
-        outputs = self.forward(inputs) # all neurons stores the inputs and all layers store activations
+        outputs = self.forward(inputs, is_training=True) # all neurons stores the inputs and all layers store activations
         if self.layers[-1].activation_function.name == "softmax":
             errors = outputs - expected_outputs
         else:
