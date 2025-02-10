@@ -18,7 +18,7 @@ class Layer(ABC):
         pass
     
     @abstractmethod
-    def forward(self, inputs):
+    def forward(self, inputs, is_training = False):
         pass
 
     @abstractmethod
