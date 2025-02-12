@@ -30,29 +30,42 @@ class MLP():
             outputs = layer.forward(outputs, is_training)
         return outputs
     
+    def __errors(self, name_last_layer, expected_outputs, outputs):
+        if name_last_layer == "softmax":
+            return outputs - expected_outputs
+        return self.error_function.backward(expected_outputs, outputs)
+    
+    def __gradient(self, layer : Layer, errors):
+        if layer.activation_function.name == "softmax":
+            gradients = 1
+        else:
+            gradients = np.array([layer.activation_function.backward(z) for z in layer.last_sums]) # f'p(z)
+        grad_L_z = errors * gradients # dL/dz = dL/dy * f'p(z)
+        layer.store(grad_L_z) # store gradient
+        return grad_L_z
+
     def backward(self, inputs, expected_outputs):
         expected_outputs = np.asarray(expected_outputs)
         inputs = np.asarray(inputs)
         outputs = self.forward(inputs, is_training=True) # all neurons stores the inputs and all layers store activations
-        if self.layers[-1].activation_function.name == "softmax":
-            errors = outputs - expected_outputs
-        else:
-            errors = self.error_function.backward(expected_outputs, outputs) # mean error
+        errors = self.__errors(self.layers[-1].activation_function.name, expected_outputs, outputs) # compute errors for last layer
         self.batch_counter += 1
         for p in reversed(range(len(self.layers))): # each layer should compute gradient for itself and error for next
             # current layer computation
             layer = self.layers[p] # layer p
-            if layer.activation_function.name == "softmax":
-                gradients = 1
-            else:
-                gradients = np.array([layer.activation_function.backward(z) for z in layer.last_sums]) # f'p(Sp,j)
-            grad_L_z = errors * gradients # dL/dz = dL/dy * f'p(Sp,j)
-            layer.store(grad_L_z) # store gradient
-            if self.batch_counter == self.batch_size:
-                layer.backward()
-            # next layer computation
-            previous_weights = np.array([neuron.weights for neuron in layer.neurons]) # create matrix of previus layer weights (for next layer its our current one)
-            errors = np.dot(grad_L_z, previous_weights) # compute next layer errors
+            if layer.is_spatial:
+                grad_L_z = self.__gradient(layer, errors)
+                if self.batch_counter == self.batch_size:
+                    layer.backward()
+                # next layer computation
+                previous_weights = np.array([neuron.weights for neuron in layer.neurons]) # create matrix of previus layer weights (for next layer its our current one)
+                errors = np.dot(grad_L_z, previous_weights) # compute next layer errors
+                continue
+            if layer.name == "flatten":
+                errors = errors.reshape(layer.size_in)
+                continue
+            if layer.name == "pooling":
+                continue
         if self.batch_counter == self.batch_size:
             self.batch_counter = 0
 

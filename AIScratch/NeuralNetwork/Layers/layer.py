@@ -12,6 +12,7 @@ class Layer(ABC):
         self.last_activations : list[float] = None
         self.neurons : list[Perceptron] = []
         self.name = name
+        self.is_spatial = False
     
     @abstractmethod
     def _initialize(self, n_in, optimizer : Optimizer, list_of_weights = None):

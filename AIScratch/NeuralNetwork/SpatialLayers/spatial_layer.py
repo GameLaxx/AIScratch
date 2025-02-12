@@ -3,8 +3,7 @@ from AIScratch.NeuralNetwork.Optimizers import Optimizer
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 
 class SpatialLayer(ABC):
-    def __init__(self, size_in, k, padding, stride, channel_out, activation_function, name):
-        self.size_in : int = size_in
+    def __init__(self, k, padding, stride, channel_out, activation_function, name):
         self.k : int = k
         self.padding : int = padding
         self.stride : int = stride
@@ -16,13 +15,18 @@ class SpatialLayer(ABC):
         self.filters : list[list[float]] = []
         self.biases : list[float] = []
         self.name = name
+        self.is_spatial = True
     
     @abstractmethod
-    def _initialize(self, optimizer : Optimizer, list_of_filters = None):
+    def _initialize(self, size_in, optimizer : Optimizer, list_of_filters = None):
         pass
     
     @abstractmethod
     def forward(self, inputs, is_training = False):
+        pass
+
+    @abstractmethod
+    def propagation(self, grad_L_z):
         pass
 
     @abstractmethod
