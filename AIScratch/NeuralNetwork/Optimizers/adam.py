@@ -12,8 +12,8 @@ class ADAMOptimizer(Optimizer):
         self.beta2t = beta2
         self.mp = np.zeros(np.array((n_p, n_p1)).flatten())
         self.vp = np.zeros(np.array((n_p, n_p1)).flatten())
-        self.mb = np.zeros(n_p[0])  # m biais
-        self.vb = np.zeros(n_p[0])  # v biais
+        self.mb = np.zeros(n_p if isinstance(n_p, int) else n_p[0])  # m biais
+        self.vb = np.zeros(n_p if isinstance(n_p, int) else n_p[0])  # v biais
 
     def update_mp(self, grad_L_w):
         self.mp = self.beta1 * self.mp + (1 - self.beta1) * grad_L_w

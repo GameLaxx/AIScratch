@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Callable
 from AIScratch.NeuralNetwork.Optimizers import Optimizer
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 
@@ -13,12 +14,12 @@ class SpatialLayer(ABC):
         self.last_sums : list[float] = None
         self.last_activations : list[float] = None
         self.filters : list[list[float]] = []
-        self.biases : list[float] = []
+        self.bias : list[float] = []
         self.name = name
         self.is_spatial = True
     
     @abstractmethod
-    def _initialize(self, size_in, optimizer : Optimizer, list_of_filters = None):
+    def _initialize(self, n_in, optimizer_factory : Callable[[int, int], Optimizer], list_of_filters = None):
         pass
     
     @abstractmethod

@@ -1,5 +1,6 @@
 import numpy as np
 from enum import Enum
+from skimage.util import view_as_windows
 from AIScratch.NeuralNetwork.SpatialLayers import SpatialLayer
 
 class PoolingType(Enum):
@@ -8,45 +9,50 @@ class PoolingType(Enum):
 
 class PoolingLayer(SpatialLayer):
     def __init__(self, k, padding, stride, channel_out, pooling_type : PoolingType):
-        super().__init__(k, padding, stride, channel_out, None, "pooling")
+        super().__init__(k, padding, stride, channel_out, None, "pooling_max" if pooling_type == PoolingType.MAX else "pooling_average")
         self.pooling_type = pooling_type
         if pooling_type == PoolingType.MAX:
             self.pooling = np.max
         else:
             self.pooling = np.average
 
-    def _initialize(self, size_in, optimizer, list_of_filters=None):
-        self.size_in = size_in
-        self.size_out = \
-            (self.channel_out, int((self.size_in[1] - self.k + 2*self.padding) / self.stride) + 1,
-              int((self.size_in[2] - self.k + 2*self.padding) / self.stride) + 1)
+    def _initialize(self, n_in, optimizer_factory, list_of_filters=None):
+        self.n_in = n_in
+        self.n_out = \
+            (self.channel_out, int((self.n_in[1] - self.k + 2*self.padding) / self.stride) + 1,
+              int((self.n_in[2] - self.k + 2*self.padding) / self.stride) + 1)
         if self.pooling_type == PoolingType.MAX:
-            self.argmax = np.zeros(self.size_out+(2,), dtype=int)
+            self.argmax = np.zeros(self.n_out+(2,), dtype=int)
 
     def forward(self, inputs, is_training=False):
-        ret = []
         if len(inputs) != self.channel_out:
             raise ValueError("The number of channels in the input must be equal to the number of channels in the layer.")
-        for i in range(self.size_out[0]):
-            ret.append([])
-            for j in range(self.size_out[1]):
-                ret[i].append([])
-                for l in range(self.size_out[2]):
-                    if self.pooling_type == PoolingType.MAX:
-                        vector_index = np.argmax(inputs[i][j*self.stride:j*self.stride+self.k, l*self.stride:l*self.stride+self.k])
-                        self.argmax[i][j][l] = np.unravel_index(vector_index, (self.k, self.k))
-                    ret[i][j].append(self.pooling(inputs[i][j*self.stride:j*self.stride+self.k, l*self.stride:l*self.stride+self.k]))
-        return np.array(ret)
+        if self.padding > 0:
+            inputs = np.pad(inputs, ((0, 0), (self.padding, self.padding), (self.padding, self.padding)), mode='constant')
+
+        # create all (k,k) sliding windows
+        windows = view_as_windows(inputs, (1, self.k, self.k), step=(1, self.stride, self.stride))
+        windows = windows.squeeze(axis=3)  # remove the last dimension
+
+        # Max-pooling
+        if self.pooling_type == PoolingType.MAX:
+            self.argmax = np.argmax(windows.reshape(*windows.shape[:3], -1), axis=-1)
+            self.argmax = np.unravel_index(self.argmax, (self.k, self.k))  # convert to 2D
+            return np.max(windows, axis=(-1, -2))
+
+        return np.mean(windows, axis=(-1, -2))
 
     def propagation(self, grad_L_z):
-        ret = np.zeros(self.size_in)
-        for i in range(len(grad_L_z)):
-            for j in range(len(grad_L_z[i])):
-                for l in range(len(grad_L_z[i][j])):
-                    if self.pooling_type == PoolingType.MAX:
-                        ret[i,j*self.stride + self.argmax[i,j,l][0], l*self.stride + self.argmax[i,j,l][1]] = grad_L_z[i][j][l]
-                        continue
-                    ret[i,j*self.stride:j*self.stride+self.k, l*self.stride:l*self.stride+self.k] = grad_L_z[i][j][l] / (self.k * self.k)
+        ret = np.zeros(self.n_in)
+        if self.pooling_type == PoolingType.MAX:
+            idx_x, idx_y = self.argmax
+            i_idx, j_idx, l_idx = np.indices(grad_L_z.shape)
+            ret[i_idx, j_idx * self.stride + idx_x, l_idx * self.stride + idx_y] = grad_L_z[i_idx, j_idx, l_idx]
+            return ret
+        k_area = self.k * self.k
+        for j in range(self.k):
+            for l in range(self.k):
+                ret[:, j*self.stride:j*self.stride+self.k, l*self.stride:l*self.stride+self.k] += grad_L_z / k_area
         return ret
     
     def store(self, grad_L_z):
