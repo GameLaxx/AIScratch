@@ -1,4 +1,5 @@
 import numpy as np
+from enum import Enum
 from typing import Callable, Any, Union
 from AIScratch.NeuralNetwork.Perceptron import Perceptron
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction, activation_set
@@ -15,6 +16,7 @@ class MLP():
         self.error_function = error_function
         self.batch_size = batch_size
         self.batch_counter = 0
+        self.__freeze_layers = -1
         self.__initialize()
 
     def __initialize(self):
@@ -22,6 +24,12 @@ class MLP():
         for layer in self.layers:
             layer._initialize(prev_size, self.optimizer_factory)
             prev_size = layer.n_out
+
+    def set_freeze_layer(self, num : int):
+        self.__freeze_layers = num if isinstance(num, int) and num > 0 else -1
+
+    def unfreeze_layer(self):
+        self.set_freeze_layer(-1)
 
     def forward(self, inputs, is_training = False):
         outputs = np.asarray(inputs)
@@ -53,6 +61,8 @@ class MLP():
         grad_L_z = np.zeros_like(errors)
         self.batch_counter += 1
         for p in reversed(range(len(self.layers))): # each layer should compute gradient for itself and error for next
+            if p < self.__freeze_layers: # allow to learn only the last layers
+                break
             # current layer computation
             layer = self.layers[p] # layer p
             grad_L_z = self.__gradient(layer, errors)
