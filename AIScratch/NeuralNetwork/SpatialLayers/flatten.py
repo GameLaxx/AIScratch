@@ -7,6 +7,7 @@ class FlattenLayer(SpatialLayer):
     def _initialize(self, n_in, optimizer_factory, list_of_filters=None):
         self.n_in = n_in
         self.n_out = n_in[0]*n_in[1]*n_in[2]
+        print("Init flatten", self.n_in, "->", self.n_out)
 
     def forward(self, inputs, is_training=False):
         return inputs.flatten()

@@ -21,6 +21,8 @@ class PoolingLayer(SpatialLayer):
         self.n_out = \
             (self.channel_out, int((self.n_in[1] - self.k + 2*self.padding) / self.stride) + 1,
               int((self.n_in[2] - self.k + 2*self.padding) / self.stride) + 1)
+        
+        print("Init pooling", self.n_in, "->", self.n_out)
         if self.pooling_type == PoolingType.MAX:
             self.argmax = np.zeros(self.n_out+(2,), dtype=int)
 

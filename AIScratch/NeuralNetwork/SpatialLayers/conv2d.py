@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import correlate
+from scipy.signal import correlate, correlate2d
 from AIScratch.NeuralNetwork.SpatialLayers import SpatialLayer
 from AIScratch.NeuralNetwork.ActivationFunctions import ActivationFunction
 
@@ -13,6 +13,7 @@ class Conv2DLayer(SpatialLayer):
         self.n_out = \
             (self.channel_out, int((self.n_in[1] - self.k + 2*self.padding) / self.stride) + 1,
               int((self.n_in[2] - self.k + 2*self.padding) / self.stride) + 1)
+        print("Init conv", self.n_in, "->", self.n_out)
         self.filter_size = (self.channel_out, self.n_in[0], self.k, self.k)
         # optimizer
         self.optimizer = optimizer_factory((self.k, self.k), (self.channel_out, self.n_in[0]))
@@ -24,12 +25,32 @@ class Conv2DLayer(SpatialLayer):
         if list_of_filters is None:
             self.filters = np.array([self.activation_function.weight_initialize(self.n_in[0] * self.k * self.k, self.n_out[0] * self.k * self.k) for _ in np.ndindex(self.filter_size)]).reshape(self.filter_size) # c channel out for n channel in and filter of size k x k
             self.bias = np.zeros(self.channel_out)
-            return
-        self.filters = list_of_filters[0]
-        self.bias = list_of_filters[1]
+        else:
+            self.filters = list_of_filters[0]
+            self.bias = list_of_filters[1]
+        self.flipped_filters = np.flip(self.filters, axis=(2, 3))
 
     def propagation(self, grad_L_z):
-        return 
+        if self.padding > 0: # create dX with the right padding 
+            dX = np.pad(np.zeros(self.n_in), ((0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+        else:
+            dX = np.zeros(self.n_in)
+        # compute the impact of each out pixel for the in pixels
+        for i in range(self.n_out[1]):
+            for j in range(self.n_out[2]):
+                #! stride and filter size is taken into account here
+                h_start = i * self.stride
+                h_end = h_start + self.k
+                w_start = j * self.stride
+                w_end = w_start + self.k
+                # update variation of inputs at the right place
+                dX[:, h_start:h_end, w_start:w_end] += np.sum(
+                    self.flipped_filters.reshape(self.n_out[0], self.n_in[0], self.k, self.k) * grad_L_z[:, i, j].reshape(self.n_out[0], 1, 1, 1), axis=0
+                )
+        # return using the right padding
+        if self.padding > 0:
+            return dX[:, self.padding:-self.padding, self.padding:-self.padding]
+        return dX
 
     def forward(self, inputs, is_training=False):
         if self.padding > 0:
@@ -58,6 +79,7 @@ class Conv2DLayer(SpatialLayer):
             self.grad_L_w / self.batch_size, self.grad_L_b / self.batch_size
         )
         self.filters -= learning_rates * weighted_errors
+        self.flipped_filters = np.flip(self.filters, axis=(2, 3))
         self.bias -= biais_update
         # update for next batch
         self.grad_L_w.fill(0)
