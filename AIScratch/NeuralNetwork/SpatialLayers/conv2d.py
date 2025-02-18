@@ -36,16 +36,16 @@ class Conv2DLayer(SpatialLayer):
         else:
             dX = np.zeros(self.n_in)
         # compute the impact of each out pixel for the in pixels
-        for i in range(self.n_out[1]):
-            for j in range(self.n_out[2]):
+        for c_out in range(self.n_out[1]):
+            for c_in in range(self.n_out[2]):
                 #! stride and filter size is taken into account here
-                h_start = i * self.stride
+                h_start = c_out * self.stride
                 h_end = h_start + self.k
-                w_start = j * self.stride
+                w_start = c_in * self.stride
                 w_end = w_start + self.k
                 # update variation of inputs at the right place
                 dX[:, h_start:h_end, w_start:w_end] += np.sum(
-                    self.flipped_filters.reshape(self.n_out[0], self.n_in[0], self.k, self.k) * grad_L_z[:, i, j].reshape(self.n_out[0], 1, 1, 1), axis=0
+                    self.flipped_filters.reshape(self.n_out[0], self.n_in[0], self.k, self.k) * grad_L_z[:, c_out, c_in].reshape(self.n_out[0], 1, 1, 1), axis=0
                 )
         # return using the right padding
         if self.padding > 0:
