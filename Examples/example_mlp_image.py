@@ -8,6 +8,8 @@ import numpy as np
 from tensorflow.keras.datasets import mnist
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
+NB_CORES = 8
+
 def number2output(num):
     ret = [0] * 10
     ret[num] = 1
@@ -18,12 +20,14 @@ def training(network : MLP, training_xs, training_ys, epoch_number : int):
     for epoch in range(epoch_number):
         print("Training number : ", epoch)
         comp = 0
-        for i in range(0, len(training_ys), 8):
+        for i in range(0, len(training_ys), NB_CORES):
             if i >= comp:
                 print("Set : ", comp)
                 comp += 500
             processes = []
-            for j in range(8):
+            for j in range(NB_CORES):
+                if i + j >= len(training_ys):
+                    break
                 p = multiprocessing.Process(target=network.backward, args=([training_xs[i + j]/255], number2output(training_ys[i + j])))
                 p.start()
                 processes.append(p)
@@ -52,7 +56,7 @@ if load:
     training(mlp, X_train, y_train, epoch_number)
 else:
     layers = [
-        Conv2DLayer(3, 0, 1, 8, ReLU()), PoolingLayer(2, 0, 2, 8, PoolingType.MAX), 
+        Conv2DLayer(3, 0, 1, 8, ReLU()), PoolingLayer(2, 1, 2, 8, PoolingType.MAX), 
         Conv2DLayer(3, 0, 1, 16, Sigmoïde()), PoolingLayer(2, 0, 2, 16, PoolingType.MAX),
         FlattenLayer(),
         DropoutLayer(100, ReLU(), 0.5) ,DenseLayer(10, Softmax())]

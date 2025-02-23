@@ -45,16 +45,21 @@ class PoolingLayer(SpatialLayer):
         return np.mean(windows, axis=(-1, -2))
 
     def propagation(self, grad_L_z):
-        ret = np.zeros(self.n_in)
+        if self.padding > 0: # create dX with the right padding 
+            ret = np.pad(np.zeros(self.n_in), ((0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+        else:
+            ret = np.zeros(self.n_in)
         if self.pooling_type == PoolingType.MAX:
             idx_x, idx_y = self.argmax
             i_idx, j_idx, l_idx = np.indices(grad_L_z.shape)
             ret[i_idx, j_idx * self.stride + idx_x, l_idx * self.stride + idx_y] = grad_L_z[i_idx, j_idx, l_idx]
-            return ret
-        k_area = self.k * self.k
-        for j in range(self.k):
-            for l in range(self.k):
-                ret[:, j*self.stride:j*self.stride+self.k, l*self.stride:l*self.stride+self.k] += grad_L_z / k_area
+        else:
+            k_area = self.k * self.k
+            for j in range(self.k):
+                for l in range(self.k):
+                    ret[:, j*self.stride:j*self.stride+self.k, l*self.stride:l*self.stride+self.k] += grad_L_z / k_area
+        if self.padding > 0:
+            return ret[:, self.padding:-self.padding, self.padding:-self.padding]
         return ret
     
     def store(self, grad_L_z):
