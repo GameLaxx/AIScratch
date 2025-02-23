@@ -7,15 +7,15 @@ class DropoutLayer(Layer):
         super().__init__(n_out, activation_function, "dropout")
         self.p = p
 
-    def _initialize(self, n_in, optimizer, list_of_weights = None):
+    def _initialize(self, n_in, optimizer_factory, list_of_weights = []):
         self.n_in = n_in
-        self.optimizer = optimizer
+        self.optimizer = optimizer_factory(self.n_in, self.n_out)
         self.grad_L_w = np.zeros((self.n_out, n_in))
         self.grad_L_b = np.zeros(self.n_out)
         self.batch_size = 0
         self.dropout = (np.random.rand(self.n_in) > (1 - self.p)).astype(int)
         for i in range(self.n_out):
-            if list_of_weights == None:
+            if len(list_of_weights) == 0 :
                 weights = [self.activation_function.weight_initialize(n_in, self.n_out) for _ in range(n_in)]
                 bias = np.random.random() * 0.2 - 0.1
             else:
@@ -31,6 +31,10 @@ class DropoutLayer(Layer):
         self.last_sums = np.array([neuron.forward(self.last_inputs) for neuron in self.neurons])
         self.last_activations = self.activation_function.forward(self.last_sums)
         return self.last_activations
+    
+    def propagation(self, grad_L_z):
+        previous_weights = np.array([neuron.weights for neuron in self.neurons]) # create matrix of previus layer weights (for next layer its our current one)
+        return np.dot(grad_L_z, previous_weights) # compute next layer errors
     
     def store(self, grad_L_z):
         self.batch_size += 1

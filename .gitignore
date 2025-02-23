@@ -2,3 +2,4 @@ build/
 dist/
 AIScratch.egg-info/
 scripts
+__pycache__/
