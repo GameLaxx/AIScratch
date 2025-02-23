@@ -10,7 +10,5 @@ class CrossEntropy(ErrorFunction):
         return - y * np.log(y_est)
     
     def backward(self, y, y_est):
-        print("Cross in :",y, y_est)
         y_est = np.clip(y_est, 1e-12, 1.0)  # avoid div by 0
-        print("Cross out :", - y / y_est)
         return - y / y_est
