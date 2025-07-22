@@ -1,73 +1,52 @@
+import itertools
 from AIScratch.Astar import HeuristicDomain
-
-class Node():
-    def __init__(self, data):
-        self.data = data
-        self.next = None
-
-class LinkedList():
-    def __init__(self):
-        self.head = None
-
-    def add(self, data):
-        new_node = Node(data)
-        new_node.next = self.head
-        self.head = new_node 
-        
-    def pop(self):
-        if not self.head:
-            raise IndexError("*-* A* error : Pop from empty list.")
-        popped_data = self.head.data
-        self.head = self.head.next
-        return popped_data
-    
-    def get(self):
-        if not self.head:
-            raise IndexError("*-* A* error : Get from empty list.")
-        return self.head.data
-    
-    def is_empty(self):
-        return self.head is None
-    
-    def to_list(self):
-        ret = []
-        current_node = self.head
-        while current_node is not None:
-            ret.append(current_node.data)
-            current_node = current_node.next
-        return ret
+import heapq
 
 class Astar():
     def __init__(self, domain : HeuristicDomain):
         self.domain = domain
-        self.g = {}
-        self.visited = set()
-        self.queue = LinkedList()
 
     def solve(self):
-        self.queue.add(self.domain.get_initial_state())
-        self.visited.add(self.domain.get_initial_state())
-        while not self.queue.is_empty() and not self.domain.is_goal(self.queue.get()) and not self.domain.is_terminal(self.queue.get()):
-            actions = self.domain.generate_actions(self.queue.get())
-            if len(actions) == 0:
-                self.queue.pop()
+        start = self.domain.get_initial_state()
+        g_score = {start: 0}
+        came_from = {}
+        open_set = []
+        visited = set()
+        
+        counter = itertools.count()
+        
+        f_start = self.domain.get_heuristic_value(start, None, start)
+        heapq.heappush(open_set, (f_start, next(counter), start))
+        
+        while open_set:
+            _, _, current = heapq.heappop(open_set)
+
+            if self.domain.is_goal(current):
+                return self.reconstruct_path(came_from, current)
+
+            if self.domain.is_terminal(current):
                 continue
-            next_state = None
-            lowest_value = -1
-            for action in actions:
-                tmp_state = self.domain.generate_state(self.queue.get(), action)
-                if tmp_state in self.visited:
+
+            visited.add(current)
+
+            for action in self.domain.generate_actions(current):
+                neighbor = self.domain.generate_state(current, action)
+                if neighbor in visited:
                     continue
-                tmp_value = self.domain.get_transition_value(self.queue.get(), action, tmp_state) + self.domain.get_heuristic_value(self.queue.get(), action, tmp_state)
-                if lowest_value >= 0 and tmp_value >= lowest_value:
-                    continue
-                lowest_value = tmp_value
-                next_state = tmp_state
-            if lowest_value == -1:
-                self.queue.pop()
-                continue
-            self.queue.add(next_state)
-            self.visited.add(next_state)
-        ret = self.queue.to_list()
-        ret.reverse()
-        return ret
+
+                tentative_g = g_score[current] + self.domain.get_transition_value(current, action, neighbor)
+
+                if neighbor not in g_score or tentative_g < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g
+                    f_score = tentative_g + self.domain.get_heuristic_value(current, action, neighbor)
+                    heapq.heappush(open_set, (f_score, next(counter), neighbor)) 
+        return []
+    
+    def reconstruct_path(self, came_from, current):
+        path = [current]
+        while current in came_from:
+            current = came_from[current]
+            path.append(current)
+        path.reverse()
+        return path
