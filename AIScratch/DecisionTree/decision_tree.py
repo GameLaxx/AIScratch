@@ -94,12 +94,15 @@ class DecisionTree():
         self.rtree = DecisionTree(self.depth + 1, self.max_depth, self.min_rows)
         self.rtree.build_tree(df2, sep)
 
-    def predict(self, sample):
+    def __predict_decision(self, sample):
         if self.decision != None:
             return self.decision
         if self.type == "o":
-            return self.ltree.predict(sample) if sample[self.column_split] == self.treshold else self.rtree.predict(sample)
-        return self.ltree.predict(sample) if sample[self.column_split] <= self.treshold else self.rtree.predict(sample)
+            return self.ltree.__predict_decision(sample) if sample[self.column_split] == self.treshold else self.rtree.__predict_decision(sample)
+        return self.ltree.__predict_decision(sample) if sample[self.column_split] <= self.treshold else self.rtree.__predict_decision(sample)
+    def predict(self, sample):
+        decision = self.__predict_decision(sample)
+        return max(decision, key=decision.get)
 
     def print_tree(self, indent=""):
         if self.decision is not None:
