@@ -1,1 +1,1 @@
-from genetic_algorithm import GeneticElement, GeneticSolver
+from AIScratch.Genetic.genetic_algorithm import GeneticElement, GeneticSolver
