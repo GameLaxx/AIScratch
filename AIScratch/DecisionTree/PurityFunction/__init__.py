@@ -1,0 +1,2 @@
+from AIScratch.DecisionTree.PurityFunction.purity import PurityFunction
+from AIScratch.DecisionTree.PurityFunction.gini_function import GiniPurity

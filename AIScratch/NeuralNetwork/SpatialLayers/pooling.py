@@ -1,6 +1,6 @@
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 from enum import Enum
-from skimage.util import view_as_windows
 from AIScratch.NeuralNetwork.SpatialLayers import SpatialLayer
 
 class PoolingType(Enum):
@@ -26,6 +26,23 @@ class PoolingLayer(SpatialLayer):
         if self.pooling_type == PoolingType.MAX:
             self.argmax = np.zeros(self.n_out+(2,), dtype=int)
 
+    def view_as_windows(arr, window_shape, step=1):
+        arr = np.asarray(arr)
+        if isinstance(window_shape, int):
+            window_shape = (window_shape,)
+        if isinstance(step, int):
+            step = (step,)
+        if len(window_shape) != arr.ndim:
+            raise ValueError("window_shape must match number of dimensions of arr")
+        if len(step) != arr.ndim:
+            raise ValueError("step must match number of dimensions of arr")
+        out_shape = tuple(((arr.shape[i] - window_shape[i]) // step[i]) + 1 for i in range(arr.ndim))
+        out_strides = tuple(arr.strides[i] * step[i] for i in range(arr.ndim))
+        window_strides = arr.strides
+        final_shape = out_shape + window_shape
+        final_strides = out_strides + window_strides
+        return as_strided(arr, shape=final_shape, strides=final_strides)
+
     def forward(self, inputs, is_training=False):
         if len(inputs) != self.channel_out:
             raise ValueError("The number of channels in the input must be equal to the number of channels in the layer.")
@@ -33,7 +50,7 @@ class PoolingLayer(SpatialLayer):
             inputs = np.pad(inputs, ((0, 0), (self.padding, self.padding), (self.padding, self.padding)), mode='constant')
 
         # create all (k,k) sliding windows
-        windows = view_as_windows(inputs, (1, self.k, self.k), step=(1, self.stride, self.stride))
+        windows = self.view_as_windows(inputs, (1, self.k, self.k), step=(1, self.stride, self.stride))
         windows = windows.squeeze(axis=3)  # remove the last dimension
 
         # Max-pooling

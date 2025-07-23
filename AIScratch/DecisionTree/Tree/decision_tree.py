@@ -1,7 +1,9 @@
+from AIScratch.DecisionTree import PurityFunction
 import pandas as pd
 
 class DecisionTree():
-    def __init__(self, depth = 1, max_depth = -1, min_rows = -1):
+    def __init__(self, purity_function : PurityFunction, depth = 1, max_depth = -1, min_rows = -1):
+        self.purity_function = purity_function
         self.depth = depth
         self.max_depth = max_depth
         self.min_rows = min_rows
@@ -11,15 +13,6 @@ class DecisionTree():
         self.ltree = None
         self.rtree = None
         self.type = None
-        
-    def gini_purity(self, data_frame : pd.DataFrame, sep : str):
-        class_counts = data_frame[sep].value_counts()
-        total = len(data_frame)
-        gini = 1.0
-        for count in class_counts:
-            prob = count / total
-            gini -= prob ** 2
-        return gini
 
     def __split_object(self, df : pd.DataFrame, sep : str, column : str):
         class_names = df[column].value_counts().keys()
@@ -28,8 +21,8 @@ class DecisionTree():
         for _class in class_names:
             df1 = df[df[column] == _class]
             df2 = df[df[column] != _class]
-            purity_1 = self.gini_purity(df1, sep)
-            purity_2 = self.gini_purity(df2, sep)
+            purity_1 = self.purity_function.purity(df1, sep)
+            purity_2 = self.purity_function.purity(df2, sep)
             tmp_purity = purity_1 * (len(df1) / len(df)) + purity_2 * (len(df2) / len(df))
             if tmp_purity < global_purity:
                 treshold = _class
@@ -45,8 +38,8 @@ class DecisionTree():
             tmp_treshold = (df_sorted.iloc[i][column] + df_sorted.iloc[i + 1][column]) / 2
             df1 = df[df[column] <= tmp_treshold]
             df2 = df[df[column] > tmp_treshold]
-            purity_1 = self.gini_purity(df1, sep)
-            purity_2 = self.gini_purity(df2, sep)
+            purity_1 = self.purity_function.purity(df1, sep)
+            purity_2 = self.purity_function.purity(df2, sep)
             tmp_purity = purity_1 * (len(df1) / len(df)) + purity_2 * (len(df2) / len(df))
             if tmp_purity < global_purity:
                 treshold = tmp_treshold
@@ -77,7 +70,7 @@ class DecisionTree():
             final_separation = df[sep].value_counts()
             self.decision = {i : final_separation[i]/len(df) for i in final_separation.keys()}
             return # no more
-        if self.gini_purity(df, sep) == 0:# completely pure
+        if self.purity_function.purity(df, sep) == 0: # completely pure
             self.decision = {i: 1.0 for i in df[sep].unique()}
             return
         self.column_split, self.treshold = self.find_split(df, sep)
@@ -89,9 +82,9 @@ class DecisionTree():
             self.type = "n" # numerical
             df1 = df[df[self.column_split] <= self.treshold]
             df2 = df[df[self.column_split] > self.treshold]
-        self.ltree = DecisionTree(self.depth + 1, self.max_depth, self.min_rows)
+        self.ltree = DecisionTree(self.purity_function, self.depth + 1, self.max_depth, self.min_rows)
         self.ltree.build_tree(df1, sep)
-        self.rtree = DecisionTree(self.depth + 1, self.max_depth, self.min_rows)
+        self.rtree = DecisionTree(self.purity_function, self.depth + 1, self.max_depth, self.min_rows)
         self.rtree.build_tree(df2, sep)
 
     def __predict_decision(self, sample):
@@ -103,6 +96,12 @@ class DecisionTree():
     def predict(self, sample):
         decision = self.__predict_decision(sample)
         return max(decision, key=decision.get)
+    
+    def evaluate(self, df : pd.DataFrame, target):
+        y_true = df[target]
+        y_pred = df.apply(self.predict, axis=1)
+        acc = (y_true == y_pred).mean()
+        return acc
 
     def print_tree(self, indent=""):
         if self.decision is not None:
